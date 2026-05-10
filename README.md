@@ -269,7 +269,3 @@ Role-to-permission defaults are also defined in `seed.ts` (`ADMIN`, `MANAGER`, `
 - Rotate `JWT_SECRET` and `REFRESH_TOKEN_SECRET`; use strong values.
 - Tighten CORS to only your deployed frontend origin(s).
 - Consider wiring **`AuditLogInterceptor`** globally if you rely on audit trails for compliance.
-
-## Related
-
-- Repository root [README.md](../README.md) for full-stack context and frontend setup.
