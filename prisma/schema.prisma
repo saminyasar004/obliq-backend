@@ -1,0 +1,172 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  BANNED
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  CONVERTED
+  LOST
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model User {
+  id           String     @id @default(uuid()) @db.Uuid
+  firstName    String
+  lastName     String
+  email        String     @unique
+  password     String
+  status       UserStatus @default(ACTIVE)
+  roleId       String?    @db.Uuid
+  managerId    String?    @db.Uuid
+  refreshToken String?
+
+  role         Role?      @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  manager      User?      @relation("UserManager", fields: [managerId], references: [id], onDelete: SetNull)
+  managedUsers User[]     @relation("UserManager")
+  
+  extraPermissions UserPermission[]
+  auditLogs        AuditLog[]
+  assignedLeads    Lead[]           @relation("LeadAssignedTo")
+  createdLeads     Lead[]           @relation("LeadCreatedBy")
+  assignedTasks    Task[]           @relation("TaskAssignedTo")
+  createdTasks     Task[]           @relation("TaskCreatedBy")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique
+  description String?
+  
+  users       User[]
+  permissions RolePermission[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique
+  description String?
+  
+  roles RolePermission[]
+  users UserPermission[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("permissions")
+}
+
+model UserPermission {
+  userId       String @db.Uuid
+  permissionId String @db.Uuid
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([userId, permissionId])
+  @@map("user_permissions")
+}
+
+model RolePermission {
+  roleId       String @db.Uuid
+  permissionId String @db.Uuid
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model Lead {
+  id        String     @id @default(uuid()) @db.Uuid
+  name      String
+  email     String
+  phone     String?
+  company   String?
+  status    LeadStatus @default(NEW)
+  notes     String?    @db.Text
+  
+  assignedTo String? @db.Uuid
+  createdBy  String  @db.Uuid
+
+  assignedUser User? @relation("LeadAssignedTo", fields: [assignedTo], references: [id], onDelete: SetNull)
+  creator      User  @relation("LeadCreatedBy", fields: [createdBy], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("leads")
+}
+
+model Task {
+  id          String       @id @default(uuid()) @db.Uuid
+  title       String
+  description String?      @db.Text
+  status      TaskStatus   @default(PENDING)
+  priority    TaskPriority @default(MEDIUM)
+  dueDate     DateTime?
+  
+  assignedTo String? @db.Uuid
+  createdBy  String  @db.Uuid
+
+  assignedUser User? @relation("TaskAssignedTo", fields: [assignedTo], references: [id], onDelete: SetNull)
+  creator      User  @relation("TaskCreatedBy", fields: [createdBy], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("tasks")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String?  @db.Uuid
+  action    String
+  resource  String?
+  details   Json?
+  ipAddress String?
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@map("audit_logs")
+}
