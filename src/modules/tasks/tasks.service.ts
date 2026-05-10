@@ -1,0 +1,58 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../../common/prisma/prisma.service';
+import { Task } from '@prisma/client';
+
+@Injectable()
+export class TasksService {
+  constructor(
+    private prisma: PrismaService,
+  ) {}
+
+  async create(taskData: any): Promise<Task> {
+    return this.prisma.task.create({
+      data: taskData,
+    });
+  }
+
+  async findAll(assignedTo?: string): Promise<any[]> {
+    return this.prisma.task.findMany({
+      where: assignedTo ? { assignedTo } : {},
+      include: {
+        assignedUser: { select: { id: true, firstName: true, lastName: true, email: true } },
+        creator: { select: { id: true, firstName: true, lastName: true, email: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async findById(id: string): Promise<any> {
+    const task = await this.prisma.task.findUnique({
+      where: { id },
+      include: {
+        assignedUser: { select: { id: true, firstName: true, lastName: true, email: true } },
+        creator: { select: { id: true, firstName: true, lastName: true, email: true } },
+      },
+    });
+
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+
+    return task;
+  }
+
+  async update(id: string, updateData: any): Promise<Task> {
+    await this.findById(id);
+    return this.prisma.task.update({
+      where: { id },
+      data: updateData,
+    });
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.findById(id);
+    await this.prisma.task.delete({
+      where: { id },
+    });
+  }
+}
