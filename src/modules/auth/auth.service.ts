@@ -177,12 +177,15 @@ export class AuthService {
 
   private extractPermissions(user: any): string[] {
     const rolePermissions =
-      user.role?.permissions?.map((p: any) => p.name) || [];
+      user.role?.permissions?.map((p: any) => p.permission?.name) || [];
     const extraPermissions =
-      user.extraPermissions?.map((p: any) => p.name) || [];
+      user.extraPermissions?.map((p: any) => p.permission?.name) || [];
     // Combine and remove duplicates
     return rolePermissions
       .concat(extraPermissions)
-      .filter((permission, index, list) => list.indexOf(permission) === index);
+      .filter(
+        (permission, index, list) =>
+          permission && list.indexOf(permission) === index,
+      );
   }
 }
