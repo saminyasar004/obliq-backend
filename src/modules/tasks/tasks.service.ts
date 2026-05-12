@@ -9,8 +9,15 @@ export class TasksService {
   ) {}
 
   async create(taskData: any): Promise<Task> {
+    const data = { ...taskData };
+    if (data.dueDate && data.dueDate !== '') {
+      data.dueDate = new Date(data.dueDate);
+    } else {
+      delete data.dueDate;
+    }
+
     return this.prisma.task.create({
-      data: taskData,
+      data,
     });
   }
 
@@ -43,9 +50,16 @@ export class TasksService {
 
   async update(id: string, updateData: any): Promise<Task> {
     await this.findById(id);
+    const data = { ...updateData };
+    if (data.dueDate && data.dueDate !== '') {
+      data.dueDate = new Date(data.dueDate);
+    } else if (data.dueDate === '') {
+      data.dueDate = null;
+    }
+
     return this.prisma.task.update({
       where: { id },
-      data: updateData,
+      data,
     });
   }
 
