@@ -9,7 +9,7 @@ export class RolesService {
   ) {}
 
   async findAll(): Promise<any[]> {
-    return this.prisma.role.findMany({ 
+    const roles = await this.prisma.role.findMany({ 
       include: {
         permissions: {
           include: {
@@ -19,10 +19,15 @@ export class RolesService {
       },
       orderBy: { name: 'asc' },
     });
+
+    return roles.map(role => ({
+      ...role,
+      permissions: role.permissions.map(p => p.permission),
+    }));
   }
 
   async findOne(id: string): Promise<any | null> {
-    return this.prisma.role.findUnique({ 
+    const role = await this.prisma.role.findUnique({ 
       where: { id },
       include: {
         permissions: {
@@ -32,10 +37,17 @@ export class RolesService {
         },
       },
     });
+
+    if (!role) return null;
+
+    return {
+      ...role,
+      permissions: role.permissions.map(p => p.permission),
+    };
   }
 
   async findByName(name: string): Promise<any | null> {
-    return this.prisma.role.findUnique({ 
+    const role = await this.prisma.role.findUnique({ 
       where: { name },
       include: {
         permissions: {
@@ -45,6 +57,13 @@ export class RolesService {
         },
       },
     });
+
+    if (!role) return null;
+
+    return {
+      ...role,
+      permissions: role.permissions.map(p => p.permission),
+    };
   }
 
   async create(roleData: any): Promise<Role> {
